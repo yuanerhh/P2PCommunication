@@ -80,7 +80,8 @@ private:
 	{
 		char buf[CMD_BUFLEN] = {0};
 		m_objSocket.SendTo(arrCmd[cmd], sizeof(arrCmd[cmd]), m_serverIP, m_serverPort);
-		m_objSocket.RecvFrom(buf, CMD_BUFLEN, NULL);
+		struct sockaddr_in addr;
+		m_objSocket.RecvFrom(buf, CMD_BUFLEN, (struct sockaddr *)&addr);
 		if (strcmp(buf, arrCmd[cmd+1]) != 0)
 		{
 			printf("%s execute success!", arrCmd[cmd]);

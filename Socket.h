@@ -132,18 +132,11 @@ public:
 		ASSERT_SOCKET(m_socket);
 		int status;
 		socklen_t addrLen = sizeof(struct sockaddr);
-		if (NULL == src_addr)
-			if ((status = recvfrom(m_socket, buf, len, 0, NULL, NULL)) < 0)
-			{
-				LOG("Error recvfrom, errNum = %d\n", status);
-				return SOCK_ERR_RECV;
-			}
-		else
-			if ((status = recvfrom(m_socket, buf, len, 0, src_addr, &addrLen)) < 0)
-			{
-				LOG("Error recvfrom, errNum = %d\n", status);
-				return SOCK_ERR_RECV;
-			}
+		if ((status = recvfrom(m_socket, buf, len, 0, src_addr, &addrLen)) < 0)
+		{
+			LOG("Error recvfrom, errNum = %d\n", status);
+			return SOCK_ERR_RECV;
+		}
 
 		return SOCK_SUCCESS;
 	}

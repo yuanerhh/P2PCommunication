@@ -66,6 +66,8 @@ public:
 				continue;
 			}
 
+			LOG("server receving data ......2222\n");
+
 			int cmd = __ParseCmd(buf);
 			if (cmd < 0)
 			{
@@ -109,6 +111,7 @@ int main(int argc, char* argv[])
 
 	CP2PServer server(argv[1]);
 	server.Start();
+	//server.AcceptAndShow();
 
 	return 0;
 }
