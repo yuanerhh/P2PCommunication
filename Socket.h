@@ -113,16 +113,37 @@ public:
 		return SOCK_SUCCESS;
 	}
 
+	int SendTo(const void *buf, size_t len, struct sockaddr *dest_addr)
+	{
+		ASSERT_SOCKET(m_socket);
+		int status;
+		socklen_t addrLen = sizeof(struct sockaddr);
+		if ((status = sendto(m_socket, buf, len, 0, dest_addr, addrLen)) < 0)
+		{
+			LOG("Error sendto, errNum = %d\n", status);
+			return SOCK_ERR_SEND;
+		}	
+
+		return SOCK_SUCCESS;
+	}
+
 	int RecvFrom(void *buf, size_t len, struct sockaddr *src_addr)
 	{
 		ASSERT_SOCKET(m_socket);
 		int status;
 		socklen_t addrLen = sizeof(struct sockaddr);
-		if ((status = recvfrom(m_socket, buf, len, 0, src_addr, &addrLen)) < 0)
-		{
-			LOG("Error recvfrom, errNum = %d\n", status);
-			return SOCK_ERR_RECV;
-		}
+		if (NULL == src_addr)
+			if ((status = recvfrom(m_socket, buf, len, 0, NULL, NULL)) < 0)
+			{
+				LOG("Error recvfrom, errNum = %d\n", status);
+				return SOCK_ERR_RECV;
+			}
+		else
+			if ((status = recvfrom(m_socket, buf, len, 0, src_addr, &addrLen)) < 0)
+			{
+				LOG("Error recvfrom, errNum = %d\n", status);
+				return SOCK_ERR_RECV;
+			}
 
 		return SOCK_SUCCESS;
 	}
