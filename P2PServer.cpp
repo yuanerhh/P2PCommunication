@@ -66,14 +66,15 @@ public:
 				continue;
 			}
 
-			LOG("server receving data ......2222\n");
-
 			int cmd = __ParseCmd(buf);
 			if (cmd < 0)
 			{
 				m_objSocket.SendTo(strErr, sizeof(strErr), (struct sockaddr *)&addr);
 				goto out;
 			}
+
+			LOG("#### ip: %s, port: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+			LOG("#### data: %s\n\n", buf);
 
 			m_objSocket.SendTo(arrCmd[cmd+1], sizeof(arrCmd[cmd+1]), (struct sockaddr *)&addr);
 		

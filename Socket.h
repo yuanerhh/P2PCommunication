@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <arpa/inet.h> 	// for inet_addr
 #include <stdlib.h>  	// for atoi itoa
+#include <errno.h>
+
 
 #define SOCK_SUCCESS 		0
 #define SOCK_ERR   			-1
@@ -88,7 +90,7 @@ public:
 		int status;
 		if ((status = bind(m_socket, (struct sockaddr *)&m_addr, sizeof(struct sockaddr))) < 0)
 		{
-			LOG("Error Bind, errNum = %d\n", status);
+			LOG("Error Bind: %s\n", strerror(errno));
 			return SOCK_ERR_BIND;
 		}
 
@@ -106,7 +108,7 @@ public:
 		dest_addr.sin_port = htons(atoi(strPort));
 		if ((status = sendto(m_socket, buf, len, 0, (struct sockaddr *)&dest_addr, addrLen)) < 0)
 		{
-			LOG("Error sendto, errNum = %d\n", status);
+			LOG("Error sendto: %s\n", strerror(errno));
 			return SOCK_ERR_SEND;
 		}	
 
@@ -120,7 +122,7 @@ public:
 		socklen_t addrLen = sizeof(struct sockaddr);
 		if ((status = sendto(m_socket, buf, len, 0, dest_addr, addrLen)) < 0)
 		{
-			LOG("Error sendto, errNum = %d\n", status);
+			LOG("Error sendto: %s\n", strerror(errno));
 			return SOCK_ERR_SEND;
 		}	
 
@@ -134,7 +136,7 @@ public:
 		socklen_t addrLen = sizeof(struct sockaddr);
 		if ((status = recvfrom(m_socket, buf, len, 0, src_addr, &addrLen)) < 0)
 		{
-			LOG("Error recvfrom, errNum = %d\n", status);
+			LOG("Error recvfrom: %s\n", strerror(errno));
 			return SOCK_ERR_RECV;
 		}
 
