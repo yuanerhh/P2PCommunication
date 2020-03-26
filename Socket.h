@@ -10,6 +10,7 @@
 
 
 #define SOCK_SUCCESS 		0
+#define SOCK_AGAIN			1
 #define SOCK_ERR   			-1
 #define SOCK_ERR_SOCKET  	-2
 #define SOCK_ERR_BIND  		-3
@@ -38,6 +39,15 @@ public:
 			LOG("Invalid socket\n");
 			return;
 		}
+
+		/* 设置阻塞超时 */
+	    struct timeval timeOut;
+	    timeOut.tv_sec = 5;                 //设置5s超时
+	    timeOut.tv_usec = 0;
+	    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
+	    {
+	        LOG("time out setting failed\n");
+	    }
 	}
 	
 	CSocket(int nProtocol, int nAddrFamily, char *strIP, char *strPort)
@@ -89,7 +99,7 @@ public:
 		ASSERT_SOCKET(m_socket);
 		int status;
 		if ((status = bind(m_socket, (struct sockaddr *)&m_addr, sizeof(struct sockaddr))) < 0)
-		{
+		{			
 			LOG("Error Bind: %s\n", strerror(errno));
 			return SOCK_ERR_BIND;
 		}
@@ -136,6 +146,9 @@ public:
 		socklen_t addrLen = sizeof(struct sockaddr);
 		if ((status = recvfrom(m_socket, buf, len, 0, src_addr, &addrLen)) < 0)
 		{
+			if (errno == EAGAIN)
+				return SOCK_AGAIN;
+				
 			LOG("Error recvfrom: %s\n", strerror(errno));
 			return SOCK_ERR_RECV;
 		}

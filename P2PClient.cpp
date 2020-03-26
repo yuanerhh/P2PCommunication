@@ -70,6 +70,7 @@ public:
 			if (STATUS_EXIT == m_clientStatus)
 				break;
 			
+			memset(key, MENU_BUFLEN, 0);
 			usleep(300);
 		}
 		return 0;
@@ -78,19 +79,27 @@ public:
 private:
 
 	// if no data, please input NULL
-	int __SendCommand(COMMAND_TYPE cmd, char *data)
+	int __SendCommand(COMMAND_TYPE cmd, char *sendData, char *recvData)
 	{
-		char buf[CMD_BUFLEN] = {0};
+		char buf[BUFLEN_MAX] = {0};
 		string strCMD = string(arrCmd[cmd]);
-		if (NULL != data)
-			strCMD += string(data);
+		if (NULL != sendData)
+			strCMD += string(sendData);
 		
 		m_objSocket.SendTo(strCMD.c_str(), strCMD.size(), m_serverIP, m_serverPort);
 		struct sockaddr_in addr;
-		m_objSocket.RecvFrom(buf, CMD_BUFLEN, (struct sockaddr *)&addr);
-		if (strcmp(buf, arrCmd[cmd+1]) == 0)
+		int status =  m_objSocket.RecvFrom(buf, BUFLEN_MAX, (struct sockaddr *)&addr);
+		if (SOCK_SUCCESS != status)
+		{
+			LOG("recv ACK failed!\n");
+			return -1;
+		}
+		
+		if (strstr(buf, arrCmd[cmd+1]) != NULL)
 		{
 			printf("%s execute success!\n", arrCmd[cmd]);
+			if (NULL != recvData && strlen(buf) != strlen(arrCmd[cmd+1]))
+				strcpy(recvData, buf+strlen(arrCmd[cmd+1]));
 			return 0;
 		}
 		else
@@ -103,7 +112,15 @@ private:
 
 	void __StepIntoChat()
 	{
-		
+		char key[MENU_BUFLEN] = {0};
+		while(1)
+		{
+			printf("%s\n", arrInteract[INTERACT_ROOM_MENU]);
+			scanf("%s", key);
+			__ParseRoomMenu(key);
+			memset(key, MENU_BUFLEN, 0);
+			usleep(300);
+		}
 	}
 
 	void __ParseMainMenu(char *key)
@@ -113,12 +130,32 @@ private:
 		switch(nKey)
 		{
 		case 1:
-			status = __SendCommand(CMD_JOIN, m_userName);
+			status = __SendCommand(CMD_JOIN, m_userName, NULL);
 			if(status == 0)
 				__StepIntoChat();
 			break;
 		case 2:	
 			m_clientStatus = STATUS_EXIT;
+			break;
+		default:
+			break;
+		}
+	}
+
+	void __ParseRoomMenu(char *key)
+	{
+		int nKey = atoi(key);
+		int status;
+		char recvData[BUFLEN_MAX] = {0};
+		switch(nKey)
+		{
+		case 1:
+			status = __SendCommand(CMD_LIST_USERS, NULL, recvData);
+			if(status == 0)
+				printf("%s\n", recvData);
+			break;
+		case 2:	
+			
 			break;
 		default:
 			break;

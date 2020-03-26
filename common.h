@@ -4,8 +4,10 @@ typedef enum
 {
 	CMD_JOIN,
 	CMD_JOIN_ACK,
+	CMD_LIST_USERS,
+	CMD_LIST_USERS_ACK,
 		
 } COMMAND_TYPE;
 
-char *arrCmd[] = {"CMD_JOIN", "CMD_JOIN_ACK", NULL};
+char *arrCmd[] = {"CMD_JOIN", "CMD_JOIN_ACK", "CMD_LIST_USERS", "CMD_LIST_USERS_ACK", NULL};
 
