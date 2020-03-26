@@ -6,7 +6,7 @@
 
 using namespace std;
 
-#define BUFLEN_MAX 	100
+#define BUFLEN_MAX 	10000
 #define MENU_BUFLEN 10
 #define CMD_BUFLEN 30
 
@@ -27,7 +27,9 @@ char *arrInteract[] = {
 enum CLIENT_STATUS
 {
 	STATUS_INIT,
-	STATUS_EXIT
+	STATUS_EXIT,
+	STATUS_JOIN_ROOM,
+	STATUS_EXIT_ROOM
 };
 
 class CP2PClient
@@ -112,6 +114,7 @@ private:
 
 	void __StepIntoChat()
 	{
+		m_clientStatus = STATUS_JOIN_ROOM;
 		char key[MENU_BUFLEN] = {0};
 		while(1)
 		{
@@ -119,6 +122,10 @@ private:
 			scanf("%s", key);
 			__ParseRoomMenu(key);
 			memset(key, MENU_BUFLEN, 0);
+
+			if (m_clientStatus == STATUS_EXIT_ROOM)
+				break;
+			
 			usleep(300);
 		}
 	}
@@ -155,8 +162,13 @@ private:
 				printf("%s\n", recvData);
 			break;
 		case 2:	
-			
 			break;
+
+		case 3:
+			status = __SendCommand(CMD_EXIT_ROOM, NULL, NULL);		
+			m_clientStatus = STATUS_EXIT_ROOM;
+			break;
+		
 		default:
 			break;
 		}

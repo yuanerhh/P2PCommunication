@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define BUFLEN_MAX 100
+#define BUFLEN_MAX 10000
 #define NAMELEN_MAX 50
 
 char strErr[] = "ERROR CMD!!!";
@@ -77,6 +77,11 @@ public:
 		
 		while(1)
 		{
+			char data[BUFLEN_MAX] = {0};
+			char cmdData[BUFLEN_MAX] = {0};
+			
+			memset(buf, BUFLEN_MAX, 0);
+			memset(cmdData, BUFLEN_MAX, 0);
 			struct sockaddr_in addr;
 			status = m_objSocket.RecvFrom(buf, BUFLEN_MAX, (struct sockaddr *)&addr);
 			if (SOCK_SUCCESS != status)
@@ -88,20 +93,17 @@ public:
 				continue;
 			}
 
-			char cmdData[BUFLEN_MAX] = {0};
-
 			int cmd = __ParseCmd(buf, cmdData);
 			if (cmd < 0)
 			{
 				LOG("__ParseCmd failed!\n");
 				m_objSocket.SendTo(strErr, strlen(strErr), (struct sockaddr *)&addr);
-				memset(buf, BUFLEN_MAX, 0);
+				
 				usleep(300);
 				continue;
 			}
 
 			string strData;
-			char data[BUFLEN_MAX] = {0};
 
 			switch(cmd)
 			{
@@ -114,6 +116,14 @@ public:
 				{
 					sprintf(data, "name: %s, ip: %s, port: %d\n", it->strUserName.c_str(), it->strUserIP.c_str(), it->nUserPort);
 					strData += string(data);
+				}
+				break;
+			case CMD_EXIT_ROOM:
+				for (vector<CUser>::iterator it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
+				{
+					if (strcmp(inet_ntoa(addr.sin_addr), it->strUserIP.c_str()) == 0 && 
+						ntohs(addr.sin_port) == it->nUserPort)
+						m_vecUserList.erase(it);
 				}
 				break;
 				
@@ -130,6 +140,7 @@ public:
 
 			m_objSocket.SendTo(strACK.c_str(), strACK.size(), (struct sockaddr *)&addr);
 		
+			memset(cmdData, BUFLEN_MAX, 0);
 			memset(buf, BUFLEN_MAX, 0);
 			usleep(300);
 		}
