@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <string.h>
+#include <string>
 #include "Socket.h"
 #include "common.h"
 
@@ -7,7 +8,7 @@ using namespace std;
 
 #define BUFLEN_MAX 	100
 #define MENU_BUFLEN 10
-#define CMD_BUFLEN 10
+#define CMD_BUFLEN 30
 
 enum INTERACT
 {
@@ -76,21 +77,27 @@ public:
 	
 private:
 
-	int __SendCommand(COMMAND_TYPE cmd)
+	// if no data, please input NULL
+	int __SendCommand(COMMAND_TYPE cmd, char *data)
 	{
 		char buf[CMD_BUFLEN] = {0};
-		m_objSocket.SendTo(arrCmd[cmd], sizeof(arrCmd[cmd]), m_serverIP, m_serverPort);
+		string strCMD = string(arrCmd[cmd]);
+		if (NULL != data)
+			strCMD += string(data);
+		
+		m_objSocket.SendTo(strCMD.c_str(), strCMD.size(), m_serverIP, m_serverPort);
 		struct sockaddr_in addr;
 		m_objSocket.RecvFrom(buf, CMD_BUFLEN, (struct sockaddr *)&addr);
-		if (strcmp(buf, arrCmd[cmd+1]) != 0)
+		if (strcmp(buf, arrCmd[cmd+1]) == 0)
 		{
-			printf("%s execute success!", arrCmd[cmd]);
-			return -1;
+			printf("%s execute success!\n", arrCmd[cmd]);
+			return 0;
 		}
 		else
 		{
-			printf("%s execute failed!", arrCmd[cmd]);
-			return 0;
+			printf("cmd recv = %s\n", buf);
+			printf("%s execute failed!\n", arrCmd[cmd]);
+			return -1;
 		}
 	}
 
@@ -106,7 +113,7 @@ private:
 		switch(nKey)
 		{
 		case 1:
-			status = __SendCommand(CMD_JOIN);
+			status = __SendCommand(CMD_JOIN, m_userName);
 			if(status == 0)
 				__StepIntoChat();
 			break;

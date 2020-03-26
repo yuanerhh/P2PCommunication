@@ -69,14 +69,17 @@ public:
 			int cmd = __ParseCmd(buf);
 			if (cmd < 0)
 			{
+				LOG("__ParseCmd failed!\n");
 				m_objSocket.SendTo(strErr, sizeof(strErr), (struct sockaddr *)&addr);
 				goto out;
 			}
 
 			LOG("#### ip: %s, port: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 			LOG("#### data: %s\n\n", buf);
+			LOG("cmd num = %d\n", cmd);
+			LOG("strlen(arrCmd[cmd]) = %d, strlen(arrCmd[cmd+1]) = %d\n", strlen(arrCmd[cmd]), strlen(arrCmd[cmd+1]));
 
-			m_objSocket.SendTo(arrCmd[cmd+1], sizeof(arrCmd[cmd+1]), (struct sockaddr *)&addr);
+			m_objSocket.SendTo(arrCmd[cmd+1], strlen(arrCmd[cmd+1]), (struct sockaddr *)&addr);
 		
 	out:	memset(buf, BUFLEN_MAX, 0);
 			usleep(300);
@@ -92,7 +95,7 @@ private:
 			if(arrCmd[i] == NULL)
 				return -1;
 
-			if (strcmp(buf, arrCmd[i]))
+			if (strstr(buf, arrCmd[i]) != NULL)
 				return i;
 		}
 	}
