@@ -31,7 +31,7 @@ class CSocket
 {
 public:
 
-	CSocket(int nProtocol, int nAddrFamily)
+	CSocket(int nProtocol, int nAddrFamily, int nTimeOut = 0)
 	{
 		m_socket = socket(nAddrFamily, nProtocol, 0);
 		if (m_socket < 0)
@@ -40,23 +40,38 @@ public:
 			return;
 		}
 
-		/* 设置阻塞超时 */
-	    struct timeval timeOut;
-	    timeOut.tv_sec = 5;                 //设置5s超时
-	    timeOut.tv_usec = 0;
-	    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
-	    {
-	        LOG("time out setting failed\n");
-	    }
+		if (nTimeOut != 0)
+		{
+			/* 设置阻塞超时 */
+		    struct timeval timeOut;
+		    timeOut.tv_sec = nTimeOut;                 //设置超时
+		    timeOut.tv_usec = 0;
+		    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
+		    {
+		        LOG("time out setting failed\n");
+		    }
+		}
 	}
 	
-	CSocket(int nProtocol, int nAddrFamily, char *strIP, char *strPort)
+	CSocket(int nProtocol, int nAddrFamily, char *strIP, char *strPort, int nTimeOut = 0)
 	{
 		m_socket = socket(nAddrFamily, nProtocol, 0);
 		if (m_socket < 0)
 		{
 			LOG("Invalid socket\n");
 			return;
+		}
+
+		if (nTimeOut != 0)
+		{
+			/* 设置阻塞超时 */
+		    struct timeval timeOut;
+		    timeOut.tv_sec = nTimeOut;                 //设置超时
+		    timeOut.tv_usec = 0;
+		    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
+		    {
+		        LOG("time out setting failed\n");
+		    }
 		}
 
 		m_addr.sin_family = nAddrFamily;
@@ -64,7 +79,7 @@ public:
 		m_addr.sin_port = htons(atoi(strPort));
 	}
 
-	CSocket(int nProtocol, int nAddrFamily, in_addr_t i32IP, char *strPort)
+	CSocket(int nProtocol, int nAddrFamily, in_addr_t i32IP, char *strPort, int nTimeOut = 0)
 	{
 		m_socket = socket(nAddrFamily, nProtocol, 0);
 		if (m_socket < 0)
@@ -73,18 +88,42 @@ public:
 			return;
 		}
 
+		if (nTimeOut != 0)
+		{
+			/* 设置阻塞超时 */
+		    struct timeval timeOut;
+		    timeOut.tv_sec = nTimeOut;                 //设置超时
+		    timeOut.tv_usec = 0;
+		    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
+		    {
+		        LOG("time out setting failed\n");
+		    }
+		}
+
 		m_addr.sin_family = nAddrFamily;
 		m_addr.sin_addr.s_addr = i32IP;
 		m_addr.sin_port = htons(atoi(strPort));
 	}
 
-	CSocket(int nProtocol, int nAddrFamily, in_addr_t i32IP, int16_t i16Port)
+	CSocket(int nProtocol, int nAddrFamily, in_addr_t i32IP, int16_t i16Port, int nTimeOut = 0)
 	{
 		m_socket = socket(nAddrFamily, nProtocol, 0);
 		if (m_socket < 0)
 		{
 			LOG("Invalid socket\n");
 			return;
+		}
+
+		if (nTimeOut != 0)
+		{
+			/* 设置阻塞超时 */
+		    struct timeval timeOut;
+		    timeOut.tv_sec = nTimeOut;                 //设置超时
+		    timeOut.tv_usec = 0;
+		    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
+		    {
+		        LOG("time out setting failed\n");
+		    }
 		}
 
 		m_addr.sin_family = nAddrFamily;

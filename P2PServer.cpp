@@ -33,7 +33,7 @@ public:
 	};
 
 	CP2PServer(char *strPort)
-		:m_objSocket(SOCK_DGRAM, AF_INET, INADDR_ANY, strPort)
+		:m_objSocket(SOCK_DGRAM, AF_INET, INADDR_ANY, strPort, 5)
 	{}
 	
 	virtual ~CP2PServer(){};
@@ -62,7 +62,6 @@ public:
 			LOG("RecvFrom Success!\n");
 			LOG("ip: %s, port: %d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 			LOG("data: %s\n\n", buf);
-			memset(buf, BUFLEN_MAX, 0);
 			usleep(300);
 		}
 	}
@@ -80,15 +79,17 @@ public:
 			char data[BUFLEN_MAX] = {0};
 			char cmdData[BUFLEN_MAX] = {0};
 			
-			memset(buf, BUFLEN_MAX, 0);
-			memset(cmdData, BUFLEN_MAX, 0);
+			memset(data, 0, BUFLEN_MAX);
+			memset(cmdData, 0, BUFLEN_MAX);
+			memset(buf, 0, BUFLEN_MAX);
+
 			struct sockaddr_in addr;
 			status = m_objSocket.RecvFrom(buf, BUFLEN_MAX, (struct sockaddr *)&addr);
 			if (SOCK_SUCCESS != status)
 			{
 				if(SOCK_AGAIN != status)
 					LOG("RecvFrom Error!\n");
-				
+
 				usleep(300);
 				continue;
 			}
@@ -104,26 +105,44 @@ public:
 			}
 
 			string strData;
+			vector<CUser>::iterator it;
 
 			switch(cmd)
 			{
 			case CMD_JOIN:
-				m_vecUserList.push_back(CUser(cmdData, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port)));
+				for (it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
+				{
+					if (strcmp(cmdData, it->strUserName.c_str()) == 0)
+						break;
+				}
+
+				if (it == m_vecUserList.end())
+					m_vecUserList.push_back(CUser(cmdData, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port)));
+				else
+				{
+					strData += string("Have same user!");
+					m_objSocket.SendTo(strData.c_str(), strData.size(), (struct sockaddr *)&addr);
+					continue;
+				}
+					
 				break;
 			
 			case CMD_LIST_USERS:
-				for (vector<CUser>::iterator it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
+				for (it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
 				{
 					sprintf(data, "name: %s, ip: %s, port: %d\n", it->strUserName.c_str(), it->strUserIP.c_str(), it->nUserPort);
 					strData += string(data);
 				}
 				break;
 			case CMD_EXIT_ROOM:
-				for (vector<CUser>::iterator it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
+				for (it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
 				{
-					if (strcmp(inet_ntoa(addr.sin_addr), it->strUserIP.c_str()) == 0 && 
-						ntohs(addr.sin_port) == it->nUserPort)
-						m_vecUserList.erase(it);
+					if (strcmp(cmdData, it->strUserName.c_str()) == 0)
+					{
+						it = m_vecUserList.erase(it);
+						if (it == m_vecUserList.end())
+							break;
+					}
 				}
 				break;
 				
@@ -140,8 +159,6 @@ public:
 
 			m_objSocket.SendTo(strACK.c_str(), strACK.size(), (struct sockaddr *)&addr);
 		
-			memset(cmdData, BUFLEN_MAX, 0);
-			memset(buf, BUFLEN_MAX, 0);
 			usleep(300);
 		}
 	}

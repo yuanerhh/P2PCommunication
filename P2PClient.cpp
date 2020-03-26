@@ -37,7 +37,7 @@ class CP2PClient
 public:
 
 	CP2PClient(char *userName, char *serverIP, char *serverPort)
-		:m_objSocket(SOCK_DGRAM, AF_INET),
+		:m_objSocket(SOCK_DGRAM, AF_INET, 5),
 		m_userName(userName),
 		m_serverIP(serverIP),
 		m_serverPort(serverPort),
@@ -72,7 +72,7 @@ public:
 			if (STATUS_EXIT == m_clientStatus)
 				break;
 			
-			memset(key, MENU_BUFLEN, 0);
+			memset(key, 0, MENU_BUFLEN);
 			usleep(300);
 		}
 		return 0;
@@ -88,6 +88,7 @@ private:
 		if (NULL != sendData)
 			strCMD += string(sendData);
 		
+		//LOG("__SendCommand buf : %s\n", strCMD.c_str());
 		m_objSocket.SendTo(strCMD.c_str(), strCMD.size(), m_serverIP, m_serverPort);
 		struct sockaddr_in addr;
 		int status =  m_objSocket.RecvFrom(buf, BUFLEN_MAX, (struct sockaddr *)&addr);
@@ -121,7 +122,7 @@ private:
 			printf("%s\n", arrInteract[INTERACT_ROOM_MENU]);
 			scanf("%s", key);
 			__ParseRoomMenu(key);
-			memset(key, MENU_BUFLEN, 0);
+			memset(key, 0, MENU_BUFLEN);
 
 			if (m_clientStatus == STATUS_EXIT_ROOM)
 				break;
@@ -165,7 +166,7 @@ private:
 			break;
 
 		case 3:
-			status = __SendCommand(CMD_EXIT_ROOM, NULL, NULL);		
+			status = __SendCommand(CMD_EXIT_ROOM, m_userName, NULL);		
 			m_clientStatus = STATUS_EXIT_ROOM;
 			break;
 		
