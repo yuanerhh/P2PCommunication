@@ -1,14 +1,17 @@
 #include <unistd.h>
 #include <string.h>
 #include <string>
+#include <vector>
 #include "Socket.h"
 #include "common.h"
 
 using namespace std;
 
-#define BUFLEN_MAX 	10000
-#define MENU_BUFLEN 10
-#define CMD_BUFLEN 30
+#define BUFLEN_MAX 		10000
+#define MENU_BUFLEN 	10
+#define CMD_BUFLEN 		30
+#define NAMELEN_MAX 	50
+
 
 enum INTERACT
 {
@@ -81,7 +84,7 @@ public:
 private:
 
 	// if no data, please input NULL
-	int __SendCommand(COMMAND_TYPE cmd, char *sendData, char *recvData)
+	int __SendCommand(COMMAND_TYPE cmd, const char *sendData, char *recvData)
 	{
 		char buf[BUFLEN_MAX] = {0};
 		string strCMD = string(arrCmd[cmd]);
@@ -150,11 +153,52 @@ private:
 		}
 	}
 
+	void __ParseRoomerInfo(char *info)
+	{
+		m_vecUserList.clear();		
+		string strInfo(info);
+		vector<string> vecUserInfo;
+
+		string::size_type position;
+		int pos_begin = 0;
+		while((position = strInfo.find("\n", position)) != string::npos)
+	    {
+			vecUserInfo.push_back(string(strInfo, pos_begin, position - pos_begin));
+			position++;
+			pos_begin = position;
+	    }
+
+		string::size_type position1 = 0;
+		string::size_type position2 = 0;
+
+		position = 0;
+
+		for(int i = 0; i < vecUserInfo.size(); i++)
+		{
+			printf("vecUserInfo: %s\n", vecUserInfo[i].c_str());
+			position1 = vecUserInfo[i].find(",", 0);
+			position2 = vecUserInfo[i].find(",", position1 + 1);
+			
+			position = vecUserInfo[i].find("name: ", 0);
+			string name(vecUserInfo[i], position+strlen("name: "), position1-position-strlen("name: "));
+
+			position = vecUserInfo[i].find("ip: ", 0);
+			string ip(vecUserInfo[i], position+strlen("ip: "), position2-position-strlen("ip: "));
+
+			position = vecUserInfo[i].find("port: ", 0);
+			int port = atoi(string(vecUserInfo[i], position+strlen("port: ")).c_str());
+			//printf("vec: name:%s; ip:%s; port:%d;\n", name.c_str(), ip.c_str(), port);
+			m_vecUserList.push_back(CUser(name, ip, port));
+		}
+	}
+
 	void __ParseRoomMenu(char *key)
 	{
 		int nKey = atoi(key);
 		int status;
 		char recvData[BUFLEN_MAX] = {0};
+		char frientName[NAMELEN_MAX] = {0};
+		vector<CUser>::iterator iter;
 		switch(nKey)
 		{
 		case 1:
@@ -163,8 +207,32 @@ private:
 				printf("%s\n", recvData);
 			break;
 		case 2:	
-			break;
+			{
+				status = __SendCommand(CMD_LIST_USERS, NULL, recvData);
+				__ParseRoomerInfo(recvData);
+				memset(recvData, 0, BUFLEN_MAX);
+				printf("please input the name to chat: \n");
+				scanf("%s", frientName);
+				for (iter = m_vecUserList.begin(); iter != m_vecUserList.end(); iter++)
+				{
+					if (iter->strUserName.find(frientName) != string::npos)
+					{
+						string strData(m_userName);
+						strData += string(" trying connecting...");
+						m_objSocket.SendTo(strData.c_str(), strData.size(), iter->strUserIP.c_str(), iter->nUserPort);
+						break;
+					}
+				}
 
+				if (iter == m_vecUserList.end())
+					break;
+				
+				string strChat = string(m_userName)+string("+")+string(frientName);
+				status = __SendCommand(CMD_BEGIN_CHAT, strChat.c_str(), recvData);
+				//if (status == 0 &&)
+				
+				break;				
+			}
 		case 3:
 			status = __SendCommand(CMD_EXIT_ROOM, m_userName, NULL);		
 			m_clientStatus = STATUS_EXIT_ROOM;
@@ -181,6 +249,7 @@ private:
 	char *m_serverIP;
 	char *m_serverPort;
 	int m_clientStatus;
+	vector<CUser> m_vecUserList;
 };
 
 

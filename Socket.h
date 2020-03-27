@@ -146,7 +146,7 @@ public:
 		return SOCK_SUCCESS;
 	}
 
-	int SendTo(const void *buf, size_t len, char *strIP, char *strPort)
+	int SendTo(const void *buf, size_t len, const char *strIP, char *strPort)
 	{
 		ASSERT_SOCKET(m_socket);
 		int status;
@@ -155,6 +155,24 @@ public:
 		dest_addr.sin_family = AF_INET;
 		dest_addr.sin_addr.s_addr = inet_addr(strIP);
 		dest_addr.sin_port = htons(atoi(strPort));
+		if ((status = sendto(m_socket, buf, len, 0, (struct sockaddr *)&dest_addr, addrLen)) < 0)
+		{
+			LOG("Error sendto: %s\n", strerror(errno));
+			return SOCK_ERR_SEND;
+		}	
+
+		return SOCK_SUCCESS;
+	}
+
+	int SendTo(const void *buf, size_t len, const char *strIP, int nPort)
+	{
+		ASSERT_SOCKET(m_socket);
+		int status;
+		socklen_t addrLen = sizeof(struct sockaddr);
+		struct sockaddr_in dest_addr;
+		dest_addr.sin_family = AF_INET;
+		dest_addr.sin_addr.s_addr = inet_addr(strIP);
+		dest_addr.sin_port = htons(nPort);
 		if ((status = sendto(m_socket, buf, len, 0, (struct sockaddr *)&dest_addr, addrLen)) < 0)
 		{
 			LOG("Error sendto: %s\n", strerror(errno));

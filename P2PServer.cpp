@@ -16,22 +16,6 @@ class CP2PServer
 {
 public:
 
-	class CUser
-	{
-	public:
-		CUser(string userName, string userIP, int userPort)
-			:strUserName(userName),
-			 strUserIP(userIP),
-			 nUserPort(userPort)
-		{}	
-		~CUser(){}
-
-		//int nUserNum;
-		string strUserName;
-		string strUserIP;
-		int nUserPort;
-	};
-
 	CP2PServer(char *strPort)
 		:m_objSocket(SOCK_DGRAM, AF_INET, INADDR_ANY, strPort, 5)
 	{}
