@@ -180,7 +180,8 @@ private:
 			pthread_mutex_lock(&m_scanfLock);
 			printf("%s\n", arrInteract[INTERACT_ROOM_MENU]);
 			scanf("%s", key);
-			__ParseRoomMenu(key);
+			if (m_clientStatus != STATUS_CHATTING)
+				__ParseRoomMenu(key);
 			memset(key, 0, MENU_BUFLEN);
 
 			if (m_clientStatus == STATUS_EXIT_ROOM)
@@ -332,7 +333,7 @@ static void *RoomListenThread(void *arg)
 			continue;
 		}
 
-		printf("RoomListenThread: m_objSocket.RecvFrom ----- 1 \n");
+		printf("RoomListenThread buf: %s\n", recvBuf);
 
 		int cmd = ParseCmd(recvBuf, cmdData);
 		if (cmd < 0)
@@ -348,6 +349,7 @@ static void *RoomListenThread(void *arg)
 		case STATUS_JOIN_ROOM:
 			if (cmd == CMD_BEGIN_CHAT)
 			{
+				client->m_clientStatus = STATUS_CHATTING;
 				pthread_mutex_lock(&client->m_scanfLock);
 				if (client->m_clientStatus == STATUS_EXIT_ROOM)
 					break;
@@ -356,44 +358,56 @@ static void *RoomListenThread(void *arg)
 				scanf("%s", scanfBuf);
 				if (strstr(scanfBuf, "y") != NULL)
 				{
-					client->m_clientStatus = STATUS_CHATTING;
+					printf("RoomListenThread -------------------- 0\n");
+					pthread_mutex_unlock(&client->m_threadLock);
 					char recvData[BUFLEN_MAX] = {0};
-					client->__SendCommand(CMD_LIST_USERS, NULL, recvData);
-					client->__ParseRoomerInfo(recvData);
+					if(client->__SendCommand(CMD_LIST_USERS, NULL, recvData) == 0)
+						client->__ParseRoomerInfo(recvData);
+					pthread_mutex_lock(&client->m_threadLock);
+					printf("RoomListenThread -------------------- 2\n");
 					vector<CUser>::iterator iter;
 					int status = 0, nCount = 0;
-					char charAckBuf[CMD_BUFLEN] = {0};
+					char chatAckBuf[CMD_BUFLEN] = {0};
 					struct sockaddr_in apply_addr;
+					printf("RoomListenThread -------------------- 3\n");
 					for (iter = client->m_vecUserList.begin(); iter != client->m_vecUserList.end(); iter++)
 					{
 						if (iter->strUserName.find(cmdData) != string::npos)
+						if (strcmp(iter->strUserName.c_str(), cmdData) == 0)
 						{
+							printf("send agree chat buf: %s\n", arrCmd[CMD_CHAT_AGREE]);
+							client->m_objSocket.SendTo(arrCmd[CMD_CHAT_AGREE], sizeof(arrCmd[CMD_CHAT_AGREE]), iter->strUserIP.c_str(), iter->nUserPort);
+							client->m_objSocket.SendTo(arrCmd[CMD_CHAT_AGREE], sizeof(arrCmd[CMD_CHAT_AGREE]), iter->strUserIP.c_str(), iter->nUserPort);
 							client->m_objSocket.SendTo(arrCmd[CMD_CHAT_AGREE], sizeof(arrCmd[CMD_CHAT_AGREE]), iter->strUserIP.c_str(), iter->nUserPort);
 							do
 							{
-								status = client->m_objSocket.RecvFrom(charAckBuf, CMD_BUFLEN, (struct sockaddr *)&apply_addr);
+								status = client->m_objSocket.RecvFrom(chatAckBuf, CMD_BUFLEN, (struct sockaddr *)&apply_addr);
 								nCount++;
 							} while (status != 0 && nCount < MAX_WAIT_COUNT);
 						}
 					}
+					printf("RoomListenThread -------------------- 4  nCount = %d\n", MAX_WAIT_COUNT);
 
 					if (iter != client->m_vecUserList.end() &&
 						nCount != MAX_WAIT_COUNT &&
 						strcmp(inet_ntoa(apply_addr.sin_addr), iter->strUserIP.c_str()) == 0  && 
 						ntohs(apply_addr.sin_port) ==  iter->nUserPort &&
-						strcmp(charAckBuf, arrCmd[CMD_CHAT_AGREE_ACK]) == 0)
+						strcmp(chatAckBuf, arrCmd[CMD_CHAT_AGREE_ACK]) == 0)
 					{
 						printf("recver agree chat!\n", iter->strUserName.c_str());
 					}
+					printf("RoomListenThread -------------------- 5\n");
 				}
 
-				pthread_mutex_lock(&client->m_scanfLock);
+				pthread_mutex_unlock(&client->m_scanfLock);
 			}
 			break;
 		
 		case STATUS_CHATTING:
 			break;
 		}
+
+		client->m_clientStatus = STATUS_JOIN_ROOM;
 
 		client->m_objSocket.SetTimeOut(DEFAULT_RECV_TIME, 0);
 		pthread_mutex_unlock(&client->m_threadLock);

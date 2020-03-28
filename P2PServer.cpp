@@ -7,8 +7,10 @@
 
 using namespace std;
 
-#define BUFLEN_MAX 10000
-#define NAMELEN_MAX 50
+#define BUFLEN_MAX 		10000
+#define NAMELEN_MAX 	50
+#define CMD_BUFLEN		30
+
 
 char strErr[] = "ERROR CMD!!!";
 
@@ -139,6 +141,8 @@ public:
 
 					string strFriendName(strCmdData, pos+1);
 					LOG("strFriendName: %s\n", strFriendName.c_str());
+
+					char chatAck[CMD_BUFLEN] = {0};
 					
 					for (it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
 					{
@@ -147,12 +151,16 @@ public:
 							string strChat = string(arrCmd[CMD_BEGIN_CHAT]) + string(strCmdData, 0, pos);
 							LOG("strChat: %s\n", strChat.c_str());
 							m_objSocket.SendTo(strChat.c_str(), strChat.size(), it->strUserIP.c_str(), it->nUserPort);
+							//m_objSocket.SendTo(strChat.c_str(), strChat.size(), it->strUserIP.c_str(), it->nUserPort);
+							//m_objSocket.SendTo(strChat.c_str(), strChat.size(), it->strUserIP.c_str(), it->nUserPort);
 							/*int status = 0, nCount = 0;
 							do
 							{
-								status = m_objSocket.RecvFrom();
+								status = m_objSocket.RecvFrom(chatAck, CMD_BUFLEN, &);
 								nCount++;
 							} while (status != 0 && nCount < 3);*/
+
+							break;
 						}
 					}					
 				}
