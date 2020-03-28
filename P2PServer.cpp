@@ -78,10 +78,10 @@ public:
 				continue;
 			}
 
-			int cmd = __ParseCmd(buf, cmdData);
+			int cmd = ParseCmd(buf, cmdData);
 			if (cmd < 0)
 			{
-				LOG("__ParseCmd failed!\n");
+				LOG("ParseCmd failed!\n");
 				m_objSocket.SendTo(strErr, strlen(strErr), (struct sockaddr *)&addr);
 				
 				usleep(300);
@@ -129,6 +129,34 @@ public:
 					}
 				}
 				break;
+
+			case CMD_BEGIN_CHAT:
+				{
+					string::size_type pos;
+					string strCmdData(cmdData);
+					if ((pos = strCmdData.find("+", 0)) == string::npos)
+						break;
+
+					string strFriendName(strCmdData, pos);
+					LOG("strFriendName: %s\n", strFriendName.c_str());
+					
+					for (it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
+					{
+						if (strFriendName.find(it->strUserName.c_str(), 0) != string::npos)
+						{
+							string strChat = string(arrCmd[CMD_BEGIN_CHAT]) + string(strFriendName, 0, pos);
+							LOG("strChat: %s\n", strChat.c_str());
+							m_objSocket.SendTo(strChat.c_str(), strChat.size(), (struct sockaddr *)&addr);
+							/*int status = 0, nCount = 0;
+							do
+							{
+								status = m_objSocket.RecvFrom();
+								nCount++;
+							} while (status != 0 && nCount < 3);*/
+						}
+					}					
+				}
+				break;
 				
 			default:
 				break;
@@ -149,21 +177,7 @@ public:
 
 private:
 
-	int __ParseCmd(char *buf, char *cmdData)
-	{
-		char *pos = NULL;
-		for (int i = 0; ; i++)
-		{
-			if(arrCmd[i] == NULL)
-				return -1;
-
-			if ((pos = strstr(buf, arrCmd[i])) != NULL)
-			{
-				strcpy(cmdData, buf+strlen(arrCmd[i]));
-				return i;				
-			}
-		}
-	}
+	
 
 private:
 	CSocket m_objSocket;

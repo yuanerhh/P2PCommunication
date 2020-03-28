@@ -7,7 +7,9 @@
 #include <arpa/inet.h> 	// for inet_addr
 #include <stdlib.h>  	// for atoi itoa
 #include <errno.h>
+#include <string>
 
+using namespace std;
 
 #define SOCK_SUCCESS 		0
 #define SOCK_AGAIN			1
@@ -146,6 +148,30 @@ public:
 		return SOCK_SUCCESS;
 	}
 
+	void BindDst(string strDstIP, int nDstPort)
+	{
+		m_strDstIP = strDstIP;
+		m_nDstPort = nDstPort;
+	}
+
+	int Send(const void *buf, size_t len)
+	{
+		ASSERT_SOCKET(m_socket);
+		int status;
+		socklen_t addrLen = sizeof(struct sockaddr);
+		struct sockaddr_in dest_addr;
+		dest_addr.sin_family = AF_INET;
+		dest_addr.sin_addr.s_addr = inet_addr(m_strDstIP.c_str());
+		dest_addr.sin_port = htons(m_nDstPort);
+		if ((status = sendto(m_socket, buf, len, 0, (struct sockaddr *)&dest_addr, addrLen)) < 0)
+		{
+			LOG("Error send: %s\n", strerror(errno));
+			return SOCK_ERR_SEND;
+		}	
+
+		return SOCK_SUCCESS;
+	}
+
 	int SendTo(const void *buf, size_t len, const char *strIP, char *strPort)
 	{
 		ASSERT_SOCKET(m_socket);
@@ -216,4 +242,6 @@ public:
 private:
 	int m_socket;
 	struct sockaddr_in m_addr;
+	string m_strDstIP;
+	int m_nDstPort;
 };
