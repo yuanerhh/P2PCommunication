@@ -135,6 +135,18 @@ public:
 	
 	virtual ~CSocket(){};
 
+	void SetTimeOut(int sec, int us)
+	{
+		/* 设置阻塞超时 */
+	    struct timeval timeOut;
+	    timeOut.tv_sec = sec;                 //设置超时
+	    timeOut.tv_usec = us;
+	    if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &timeOut, sizeof(timeOut)) < 0)
+	    {
+	        LOG("time out setting failed\n");
+	    }
+	}
+
 	int Bind()
 	{
 		ASSERT_SOCKET(m_socket);

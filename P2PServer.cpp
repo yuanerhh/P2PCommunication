@@ -137,16 +137,16 @@ public:
 					if ((pos = strCmdData.find("+", 0)) == string::npos)
 						break;
 
-					string strFriendName(strCmdData, pos);
+					string strFriendName(strCmdData, pos+1);
 					LOG("strFriendName: %s\n", strFriendName.c_str());
 					
 					for (it = m_vecUserList.begin(); it != m_vecUserList.end(); it++)
 					{
-						if (strFriendName.find(it->strUserName.c_str(), 0) != string::npos)
+						if (strcmp(it->strUserName.c_str(), strFriendName.c_str()) == 0)
 						{
-							string strChat = string(arrCmd[CMD_BEGIN_CHAT]) + string(strFriendName, 0, pos);
+							string strChat = string(arrCmd[CMD_BEGIN_CHAT]) + string(strCmdData, 0, pos);
 							LOG("strChat: %s\n", strChat.c_str());
-							m_objSocket.SendTo(strChat.c_str(), strChat.size(), (struct sockaddr *)&addr);
+							m_objSocket.SendTo(strChat.c_str(), strChat.size(), it->strUserIP.c_str(), it->nUserPort);
 							/*int status = 0, nCount = 0;
 							do
 							{

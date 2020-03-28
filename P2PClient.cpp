@@ -14,6 +14,9 @@ using namespace std;
 #define NAMELEN_MAX 	50
 #define MAX_WAIT_COUNT	4
 
+#define DEFAULT_RECV_TIME 		5
+#define THREAD_SLEEP_TIME_MS 	20
+
 enum INTERACT
 {
 	INTERACT_MAIN_MENU,
@@ -44,7 +47,7 @@ class CP2PClient
 public:
 
 	CP2PClient(char *userName, char *serverIP, char *serverPort)
-		:m_objSocket(SOCK_DGRAM, AF_INET, 5),
+		:m_objSocket(SOCK_DGRAM, AF_INET, DEFAULT_RECV_TIME),
 		m_userName(userName),
 		m_serverIP(serverIP),
 		m_serverPort(serverPort),
@@ -138,10 +141,10 @@ public:
 		string strCMD = string(arrCmd[cmd]);
 		if (NULL != sendData)
 			strCMD += string(sendData);
-		
-		//LOG("__SendCommand buf : %s\n", strCMD.c_str());
+
+		pthread_mutex_lock(&m_threadLock);		
+		LOG("__SendCommand buf : %s\n", strCMD.c_str());
 		m_objSocket.SendTo(strCMD.c_str(), strCMD.size(), m_serverIP, m_serverPort);
-		pthread_mutex_lock(&m_threadLock);
 		struct sockaddr_in addr;
 		int status =  m_objSocket.RecvFrom(buf, BUFLEN_MAX, (struct sockaddr *)&addr);
 		pthread_mutex_unlock(&m_threadLock);
@@ -271,9 +274,10 @@ private:
 				{
 					printf("applyer agree chat!\n");					
 				}
-				
-				break;				
+						
 			}
+			break;
+		
 		case 3:
 			status = __SendCommand(CMD_EXIT_ROOM, m_userName, NULL);		
 			m_clientStatus = STATUS_EXIT_ROOM;
@@ -317,15 +321,24 @@ static void *RoomListenThread(void *arg)
 		memset(recvBuf, 0, BUFLEN_MAX);
 		memset(cmdData, 0, NAMELEN_MAX);
 		pthread_mutex_lock(&client->m_threadLock);
+		client->m_objSocket.SetTimeOut(0, 1000 * THREAD_SLEEP_TIME_MS);
 		status = client->m_objSocket.RecvFrom(recvBuf, BUFLEN_MAX, (struct sockaddr *)&addr);
 		if (status != SOCK_SUCCESS)
 		{
+			//printf("RoomListenThread: m_objSocket.RecvFrom ----- 0 \n");
+			client->m_objSocket.SetTimeOut(DEFAULT_RECV_TIME, 0);
+			pthread_mutex_unlock(&client->m_threadLock);
+			usleep(1000 * THREAD_SLEEP_TIME_MS);
 			continue;
 		}
+
+		printf("RoomListenThread: m_objSocket.RecvFrom ----- 1 \n");
 
 		int cmd = ParseCmd(recvBuf, cmdData);
 		if (cmd < 0)
 		{
+			client->m_objSocket.SetTimeOut(DEFAULT_RECV_TIME, 0);
+			pthread_mutex_unlock(&client->m_threadLock);
 			LOG("ParseCmd failed!\n");
 			continue;
 		}
@@ -382,7 +395,9 @@ static void *RoomListenThread(void *arg)
 			break;
 		}
 
-		usleep(300);
+		client->m_objSocket.SetTimeOut(DEFAULT_RECV_TIME, 0);
+		pthread_mutex_unlock(&client->m_threadLock);
+		usleep(1000 * THREAD_SLEEP_TIME_MS);
 	}
 }
 
