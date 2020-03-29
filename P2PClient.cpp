@@ -247,10 +247,6 @@ private:
 				{
 					if (iter->strUserName.find(frientName) != string::npos)
 					{
-						string strData(m_userName);
-						strData += string(" trying connecting...");
-						printf("SendTo ip->%s, port->%d, Data: %s\n", iter->strUserIP.c_str(), iter->nUserPort, strData.c_str());
-						m_objSocket.SendTo(strData.c_str(), strData.size(), iter->strUserIP.c_str(), iter->nUserPort);
 						break;
 					}
 				}
@@ -260,6 +256,12 @@ private:
 				
 				string strChat = string(m_userName)+string("+")+string(frientName);
 				status = __SendCommand(CMD_BEGIN_CHAT, strChat.c_str(), recvData);
+
+				string strData(m_userName);
+				strData += string(" trying connecting...");
+				printf("SendTo ip->%s, port->%d, Data: %s\n", iter->strUserIP.c_str(), iter->nUserPort, strData.c_str());
+				m_objSocket.SendTo(strData.c_str(), strData.size(), iter->strUserIP.c_str(), iter->nUserPort);
+				
 				int nCount = 0;
 				char charAckBuf[CMD_BUFLEN] = {0};
 				struct sockaddr_in apply_addr;
@@ -268,6 +270,9 @@ private:
 					status = m_objSocket.RecvFrom(charAckBuf, CMD_BUFLEN, (struct sockaddr *)&apply_addr);
 					nCount++;
 				} while (status != 0 && nCount < MAX_WAIT_COUNT);
+
+				if (nCount != MAX_WAIT_COUNT)
+					printf("chat apply ack buf: %s, ip->%s, port->%d\n", charAckBuf, inet_ntoa(apply_addr.sin_addr), ntohs(apply_addr.sin_port));
 
 				if (nCount != MAX_WAIT_COUNT &&
 					strcmp(inet_ntoa(apply_addr.sin_addr), iter->strUserIP.c_str()) == 0  && 
@@ -351,13 +356,13 @@ static void *RoomListenThread(void *arg)
 			if (cmd == CMD_BEGIN_CHAT)
 			{
 				client->m_clientStatus = STATUS_CHATTING;
-				pthread_mutex_lock(&client->m_scanfLock);
+				//pthread_mutex_lock(&client->m_scanfLock);
 				if (client->m_clientStatus == STATUS_EXIT_ROOM)
 					break;
 				
 				printf("%s apply for chatting, (y/n):\n", cmdData);
-				scanf("%s", scanfBuf);
-				if (strstr(scanfBuf, "y") != NULL)
+				//scanf("%s", scanfBuf);
+				//if (strstr(scanfBuf, "y") != NULL)
 				{
 					printf("RoomListenThread -------------------- 0\n");
 					pthread_mutex_unlock(&client->m_threadLock);
@@ -400,7 +405,7 @@ static void *RoomListenThread(void *arg)
 					printf("RoomListenThread -------------------- 5\n");
 				}
 
-				pthread_mutex_unlock(&client->m_scanfLock);
+				//pthread_mutex_unlock(&client->m_scanfLock);
 			}
 			break;
 		
