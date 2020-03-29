@@ -8,6 +8,7 @@
 #include <stdlib.h>  	// for atoi itoa
 #include <errno.h>
 #include <string>
+#include <string.h>
 
 using namespace std;
 
