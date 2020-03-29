@@ -249,6 +249,7 @@ private:
 					{
 						string strData(m_userName);
 						strData += string(" trying connecting...");
+						printf("SendTo ip->%s, port->%d, Data: %s\n", iter->strUserIP.c_str(), iter->nUserPort, strData.c_str());
 						m_objSocket.SendTo(strData.c_str(), strData.size(), iter->strUserIP.c_str(), iter->nUserPort);
 						break;
 					}
@@ -375,7 +376,7 @@ static void *RoomListenThread(void *arg)
 						if (iter->strUserName.find(cmdData) != string::npos)
 						if (strcmp(iter->strUserName.c_str(), cmdData) == 0)
 						{
-							printf("send agree chat buf: %s\n", arrCmd[CMD_CHAT_AGREE]);
+							printf("send agree chat buf: %s, ip->%s, port->%d\n", arrCmd[CMD_CHAT_AGREE], iter->strUserIP.c_str(), iter->nUserPort);
 							client->m_objSocket.SendTo(arrCmd[CMD_CHAT_AGREE], sizeof(arrCmd[CMD_CHAT_AGREE]), iter->strUserIP.c_str(), iter->nUserPort);
 							client->m_objSocket.SendTo(arrCmd[CMD_CHAT_AGREE], sizeof(arrCmd[CMD_CHAT_AGREE]), iter->strUserIP.c_str(), iter->nUserPort);
 							client->m_objSocket.SendTo(arrCmd[CMD_CHAT_AGREE], sizeof(arrCmd[CMD_CHAT_AGREE]), iter->strUserIP.c_str(), iter->nUserPort);
