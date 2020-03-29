@@ -40,6 +40,12 @@ enum CLIENT_STATUS
 	STATUS_CHATTING,
 };
 
+enum NAT_TYPE
+{
+	NAT_CONE, 		// 锥形NAT
+	NAT_SYMMETRY,	// 对称NAT
+};
+
 static void *RoomListenThread(void *arg);
 
 class CP2PClient
@@ -51,7 +57,8 @@ public:
 		m_userName(userName),
 		m_serverIP(serverIP),
 		m_serverPort(serverPort),
-		m_clientStatus(STATUS_INIT) 
+		m_clientStatus(STATUS_INIT),
+		m_natType(NAT_CONE)
 	{
 		pthread_mutex_init(&m_threadLock,NULL);
 		pthread_mutex_init(&m_scanfLock,NULL);
@@ -93,6 +100,32 @@ public:
 			usleep(300);
 		}
 		return 0;
+	}
+
+	void UpdateNatType(char *server1, char *port1, char *server2, char *port2)
+	{
+		int status = 0;
+		char recvBuf1[BUFLEN_MAX] = {0};
+		char recvBuf2[BUFLEN_MAX] = {0};
+		printf("arrCmd[CMD_QUERY_SELF_ADDR] = %s, size = %d\n", arrCmd[CMD_QUERY_SELF_ADDR], strlen(arrCmd[CMD_QUERY_SELF_ADDR]));
+		status = m_objSocket.SendTo(arrCmd[CMD_QUERY_SELF_ADDR], strlen(arrCmd[CMD_QUERY_SELF_ADDR]), server1, atoi(port1));
+		status |= m_objSocket.RecvFrom(recvBuf1, BUFLEN_MAX, NULL);
+
+		status |= m_objSocket.SendTo(arrCmd[CMD_QUERY_SELF_ADDR], strlen(arrCmd[CMD_QUERY_SELF_ADDR]), server2, atoi(port2));
+		status |= m_objSocket.RecvFrom(recvBuf2, BUFLEN_MAX, NULL);
+
+		if (SOCK_SUCCESS != status)
+			return;
+
+		LOG("recvBuf1 = %s\n recvBuf2 = %s\n", recvBuf1, recvBuf2);
+		if (strstr(recvBuf1, arrCmd[CMD_QUERY_SELF_ADDR+1]) != NULL && 
+			strstr(recvBuf2, arrCmd[CMD_QUERY_SELF_ADDR+1]) != NULL &&
+			strcmp(recvBuf1, recvBuf2) != 0)
+		{
+			LOG("change m_natType to NAT_SYMMETRY\n");
+			m_natType = NAT_SYMMETRY;
+		}
+
 	}
 
 	void __ParseRoomerInfo(char *info)
@@ -310,6 +343,7 @@ public:
 	pthread_mutex_t m_threadLock;
 	pthread_mutex_t m_scanfLock;
 	vector<CUser> m_vecUserList;
+	int m_natType;
 	
 };
 
@@ -430,8 +464,12 @@ int main(int argc, char* argv[])
 		LOG("Usage: ./P2PClient UserName IP Port\n");
 		return 0;
 	}
-
+		
 	CP2PClient client(argv[1], argv[2], argv[3]);
+
+	if (argc > 5)
+		client.UpdateNatType(argv[2], argv[3], argv[4], argv[5]);
+	
 	//client.ReadAndSend();
 	client.BeginChat();
 	printf("Exit the client!\n");

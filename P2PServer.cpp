@@ -83,7 +83,7 @@ public:
 			int cmd = ParseCmd(buf, cmdData);
 			if (cmd < 0)
 			{
-				LOG("ParseCmd failed!\n");
+				LOG("ParseCmd failed!  buf = %s\n", buf);
 				m_objSocket.SendTo(strErr, strlen(strErr), (struct sockaddr *)&addr);
 				
 				usleep(300);
@@ -164,6 +164,10 @@ public:
 						}
 					}					
 				}
+				break;
+
+			case CMD_QUERY_SELF_ADDR:
+				strData = string(inet_ntoa(addr.sin_addr)) + string("+") + to_string(ntohs(addr.sin_port));
 				break;
 				
 			default:
